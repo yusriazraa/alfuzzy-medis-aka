@@ -1,85 +1,41 @@
+// frontend/src/app/screening/page.tsx
 'use client';
 
 import React, { useState, useMemo } from 'react';
 import { Symptom, PatientInfo, DiagnosisResult } from '@/types';
 import { diagnosisApi } from '@/lib/api';
 
-// --- SVG Component for Interactive Body Map ---
-const BodyMap = ({ highlightedParts }: { highlightedParts: Set<string> }) => {
-    const isHighlighted = (part: string) => highlightedParts.has(part);
-    return (
-        <svg viewBox="0 0 200 400" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-            <defs>
-                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="5" result="coloredBlur" />
-                    <feMerge>
-                        <feMergeNode in="coloredBlur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
-            {/* Body Silhouette */}
-            <path d="M100 50 C 110 40, 115 30, 100 20 C 85 30, 90 40, 100 50 Z" fill="#d1d5db" /> {/* Head */}
-            <path d="M100 50 L 100 120 L 120 120 L 125 200 L 110 380 L 100 390 L 90 380 L 75 200 L 80 120 L 100 120 Z" fill="#d1d5db" /> {/* Torso & Legs */}
-            <path d="M80 120 L 60 200 L 50 180 Z" fill="#d1d5db" /> {/* Left Arm */}
-            <path d="M120 120 L 140 200 L 150 180 Z" fill="#d1d5db" /> {/* Right Arm */}
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 
-            {/* Highlight Zones */}
-            {isHighlighted('head') && <circle cx="100" cy="35" r="20" fill="var(--accent)" opacity="0.7" filter="url(#glow)" />}
-            {isHighlighted('throat') && <circle cx="100" cy="65" r="10" fill="var(--accent)" opacity="0.7" filter="url(#glow)" />}
-            {isHighlighted('chest') && <circle cx="100" cy="100" r="25" fill="var(--accent)" opacity="0.7" filter="url(#glow)" />}
-            {isHighlighted('stomach') && <circle cx="100" cy="150" r="25" fill="var(--accent)" opacity="0.7" filter="url(#glow)" />}
-            {isHighlighted('skin') && <rect x="40" y="20" width="120" height="370" fill="var(--accent)" opacity="0.3" rx="20" filter="url(#glow)" />}
-            {isHighlighted('eyes') && <>
-                <circle cx="93" cy="35" r="5" fill="var(--accent)" opacity="0.9" filter="url(#glow)" />
-                <circle cx="107" cy="35" r="5" fill="var(--accent)" opacity="0.9" filter="url(#glow)" />
-            </>}
-             {isHighlighted('mouth') && <ellipse cx="100" cy="45" rx="10" ry="4" fill="var(--accent)" opacity="0.7" filter="url(#glow)" />}
-
-        </svg>
-    );
-};
-
-
-// --- Symptom Data with Categories and Body Parts ---
+// Data Gejala (Sama seperti sebelumnya)
 const SYMPTOM_DATA = [
-    // Gejala Umum
-    { name: 'suhu_tinggi', label: 'Demam / Suhu Tinggi', weight: 0.9, category: 'Umum', bodyPart: 'head' },
-    { name: 'lemas', label: 'Lemas / Tidak Bertenaga', weight: 0.7, category: 'Umum', bodyPart: 'skin' },
-    { name: 'sakit_kepala', label: 'Sakit Kepala', weight: 0.8, category: 'Umum', bodyPart: 'head' },
-    { name: 'menggigil', label: 'Menggigil', weight: 0.7, category: 'Umum', bodyPart: 'skin' },
-    { name: 'nyeri_otot', label: 'Nyeri Otot', weight: 0.6, category: 'Umum', bodyPart: 'skin' },
-
-    // Gejala Pernapasan
-    { name: 'batuk', label: 'Batuk', weight: 0.7, category: 'Pernapasan', bodyPart: 'chest' },
-    { name: 'pilek', label: 'Pilek / Hidung Tersumbat', weight: 0.6, category: 'Pernapasan', bodyPart: 'head' },
-    { name: 'sakit_tenggorokan', label: 'Sakit Tenggorokan', weight: 0.8, category: 'Pernapasan', bodyPart: 'throat' },
-    { name: 'sesak_napas', label: 'Sesak Napas', weight: 1.0, category: 'Pernapasan', bodyPart: 'chest' },
-    { name: 'nyeri_menelan', label: 'Nyeri Saat Menelan', weight: 0.7, category: 'Pernapasan', bodyPart: 'throat' },
-    { name: 'bersin', label: 'Bersin-bersin', weight: 0.5, category: 'Pernapasan', bodyPart: 'head' },
-    { name: 'bengkak_pipi', label: 'Bengkak di Pipi/Rahang', weight: 0.9, category: 'Pernapasan', bodyPart: 'head' },
-    { name: 'nyeri_rahang', label: 'Nyeri pada Rahang', weight: 0.8, category: 'Pernapasan', bodyPart: 'head' },
-
-    // Gejala Pencernaan
-    { name: 'mual', label: 'Mual', weight: 0.8, category: 'Pencernaan', bodyPart: 'stomach' },
-    { name: 'muntah', label: 'Muntah', weight: 0.9, category: 'Pencernaan', bodyPart: 'stomach' },
-    { name: 'sakit_perut', label: 'Sakit Perut', weight: 0.8, category: 'Pencernaan', bodyPart: 'stomach' },
-    { name: 'buang_air_besar_cair', label: 'Buang Air Besar Cair', weight: 0.8, category: 'Pencernaan', bodyPart: 'stomach' },
-
-    // Gejala Kulit & Mata
-    { name: 'luka_melepuh', label: 'Luka Melepuh', weight: 0.9, category: 'Kulit & Mata', bodyPart: 'skin' },
-    { name: 'gatal_di_kulit', label: 'Gatal-gatal pada Kulit', weight: 0.8, category: 'Kulit & Mata', bodyPart: 'skin' },
-    { name: 'ruam_kulit', label: 'Ruam Kemerahan', weight: 0.7, category: 'Kulit & Mata', bodyPart: 'skin' },
-    { name: 'mata_merah', label: 'Mata Merah', weight: 0.8, category: 'Kulit & Mata', bodyPart: 'eyes' },
-    { name: 'mata_berair', label: 'Mata Berair', weight: 0.6, category: 'Kulit & Mata', bodyPart: 'eyes' },
-    { name: 'gatal_mata', label: 'Mata Terasa Gatal', weight: 0.7, category: 'Kulit & Mata', bodyPart: 'eyes' },
-    { name: 'kotoran_mata', label: 'Kotoran Mata Berlebih', weight: 0.7, category: 'Kulit & Mata', bodyPart: 'eyes' },
-    { name: 'gatal_malam_hari', label: 'Gatal Hebat di Malam Hari', weight: 1.0, category: 'Kulit & Mata', bodyPart: 'skin' },
-    
-    // Gejala Mulut
-    { name: 'luka_mulut', label: 'Sariawan', weight: 0.9, category: 'Mulut', bodyPart: 'mouth' },
-    { name: 'nyeri_mulut', label: 'Nyeri di Area Mulut', weight: 0.8, category: 'Mulut', bodyPart: 'mouth' },
-    { name: 'sulit_makan', label: 'Sulit Makan atau Minum', weight: 0.7, category: 'Mulut', bodyPart: 'mouth' },
+    { name: 'suhu_tinggi', label: 'Demam / Suhu Tinggi', weight: 0.9, category: 'Umum' },
+    { name: 'lemas', label: 'Lemas / Tidak Bertenaga', weight: 0.7, category: 'Umum' },
+    { name: 'sakit_kepala', label: 'Sakit Kepala', weight: 0.8, category: 'Umum' },
+    { name: 'menggigil', label: 'Menggigil', weight: 0.7, category: 'Umum' },
+    { name: 'nyeri_otot', label: 'Nyeri Otot', weight: 0.6, category: 'Umum' },
+    { name: 'batuk', label: 'Batuk', weight: 0.7, category: 'Pernapasan' },
+    { name: 'pilek', label: 'Pilek / Hidung Tersumbat', weight: 0.6, category: 'Pernapasan' },
+    { name: 'sakit_tenggorokan', label: 'Sakit Tenggorokan', weight: 0.8, category: 'Pernapasan' },
+    { name: 'sesak_napas', label: 'Sesak Napas', weight: 1.0, category: 'Pernapasan' },
+    { name: 'mual', label: 'Mual', weight: 0.8, category: 'Pencernaan' },
+    { name: 'muntah', label: 'Muntah', weight: 0.9, category: 'Pencernaan' },
+    { name: 'sakit_perut', label: 'Sakit Perut', weight: 0.8, category: 'Pencernaan' },
+    { name: 'luka_melepuh', label: 'Luka Melepuh', weight: 0.9, category: 'Kulit & Mata' },
+    { name: 'gatal_di_kulit', label: 'Gatal-gatal pada Kulit', weight: 0.8, category: 'Kulit & Mata' },
+    { name: 'ruam_kulit', label: 'Ruam Kemerahan', weight: 0.7, category: 'Kulit & Mata' },
+    { name: 'mata_merah', label: 'Mata Merah', weight: 0.8, category: 'Kulit & Mata' },
+    { name: 'luka_mulut', label: 'Sariawan', weight: 0.9, category: 'Mulut' },
+    { name: 'nyeri_mulut', label: 'Nyeri di Area Mulut', weight: 0.8, category: 'Mulut' },
 ];
 
 export default function ScreeningPage() {
@@ -88,8 +44,6 @@ export default function ScreeningPage() {
     const [results, setResults] = useState<DiagnosisResult[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [recommendations, setRecommendations] = useState<string[]>([]);
-    const [selectedSymptoms, setSelectedSymptoms] = useState<Set<string>>(new Set());
-    const [activeCategory, setActiveCategory] = useState<string>('Umum');
 
     const symptomCategories = useMemo(() => {
         return SYMPTOM_DATA.reduce((acc, symptom) => {
@@ -98,35 +52,19 @@ export default function ScreeningPage() {
         }, {} as Record<string, typeof SYMPTOM_DATA>);
     }, []);
 
-    const highlightedBodyParts = useMemo(() => {
-        const parts = new Set<string>();
-        symptoms.forEach(symptom => {
-            const data = SYMPTOM_DATA.find(d => d.name === symptom.name);
-            if (data?.bodyPart) {
-                parts.add(data.bodyPart);
-            }
-        });
-        return parts;
-    }, [symptoms]);
-
-    const handleCheckboxChange = (symptom: Omit<Symptom, 'value' | 'category' | 'bodyPart'>, isChecked: boolean) => {
-        const newSelected = new Set(selectedSymptoms);
-        const fullSymptomData = SYMPTOM_DATA.find(s => s.name === symptom.name)!;
-
-        if (isChecked) {
-            newSelected.add(symptom.name);
+    const handleSymptomCheckedChange = (symptom: Omit<Symptom, 'value' | 'category'>, checked: boolean | 'indeterminate') => {
+        if (checked) {
             if (!symptoms.some(s => s.name === symptom.name)) {
-                setSymptoms(prev => [...prev, { ...fullSymptomData, value: 50 }]);
+                const fullSymptom = SYMPTOM_DATA.find(s => s.name === symptom.name)!;
+                setSymptoms(prev => [...prev, { ...fullSymptom, value: 50 }]);
             }
         } else {
-            newSelected.delete(symptom.name);
             setSymptoms(prev => prev.filter(s => s.name !== symptom.name));
         }
-        setSelectedSymptoms(newSelected);
     };
 
-    const handleSliderChange = (symptomName: string, value: number) => {
-        setSymptoms(prev => prev.map(s => s.name === symptomName ? { ...s, value } : s));
+    const handleSliderChange = (symptomName: string, value: number[]) => {
+        setSymptoms(prev => prev.map(s => s.name === symptomName ? { ...s, value: value[0] } : s));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -146,123 +84,123 @@ export default function ScreeningPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-            <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column: Form */}
-                <div className="bg-white rounded-xl shadow-lg p-6 space-y-6">
-                    <div className="text-center border-b pb-4">
-                        <h1 className="text-2xl font-bold text-[--foreground]">Form Screening Kesehatan</h1>
-                        <p className="text-sm text-gray-500">Isi data dan pilih gejala yang dirasakan</p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+            <Card className="w-full max-w-4xl mx-auto">
+                <CardHeader>
+                    <CardTitle className="text-2xl text-center">Screening Kesehatan Mandiri</CardTitle>
+                    <CardDescription className="text-center">Isi data diri dan pilih gejala yang dirasakan untuk mendapatkan diagnosis awal.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Patient Info */}
-                        <fieldset>
-                            <legend className="text-lg font-semibold text-gray-700 mb-2">Data Diri Santri</legend>
+                        <fieldset className="space-y-4">
+                            <legend className="text-lg font-semibold">Data Diri Santri</legend>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label htmlFor="nama" className="block text-xs font-medium text-gray-600">Nama Lengkap</label>
-                                    <input type="text" id="nama" value={patientInfo.name} onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })} className="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-[--primary] focus:ring-[--primary]" required />
+                                <div className="space-y-2">
+                                    <Label htmlFor="nama">Nama Lengkap</Label>
+                                    <Input id="nama" placeholder="Masukkan nama lengkap" value={patientInfo.name} onChange={(e) => setPatientInfo({ ...patientInfo, name: e.target.value })} required />
                                 </div>
-                                <div>
-                                    <label htmlFor="umur" className="block text-xs font-medium text-gray-600">Umur</label>
-                                    <input type="number" id="umur" value={patientInfo.age === 0 ? '' : patientInfo.age} onChange={(e) => setPatientInfo({ ...patientInfo, age: parseInt(e.target.value) || 0 })} className="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-[--primary] focus:ring-[--primary]" required />
+                                <div className="space-y-2">
+                                    <Label htmlFor="umur">Umur</Label>
+                                    <Input id="umur" type="number" placeholder="Contoh: 15" value={patientInfo.age === 0 ? '' : patientInfo.age} onChange={(e) => setPatientInfo({ ...patientInfo, age: parseInt(e.target.value) || 0 })} required />
                                 </div>
-                                <div>
-                                    <label htmlFor="jenis_kelamin" className="block text-xs font-medium text-gray-600">Jenis Kelamin</label>
-                                    <select id="jenis_kelamin" value={patientInfo.gender} onChange={(e) => setPatientInfo({ ...patientInfo, gender: e.target.value as 'Laki-laki' | 'Perempuan' })} className="mt-1 block w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-[--primary] focus:ring-[--primary]">
-                                        <option>Laki-laki</option>
-                                        <option>Perempuan</option>
-                                    </select>
+                                <div className="space-y-2">
+                                    <Label htmlFor="jenis_kelamin">Jenis Kelamin</Label>
+                                    <Select value={patientInfo.gender} onValueChange={(value) => setPatientInfo({ ...patientInfo, gender: value as 'Laki-laki' | 'Perempuan' })}>
+                                        <SelectTrigger id="jenis_kelamin">
+                                            <SelectValue placeholder="Pilih jenis kelamin" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                                            <SelectItem value="Perempuan">Perempuan</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </fieldset>
 
                         {/* Symptoms */}
                         <fieldset>
-                            <legend className="text-lg font-semibold text-gray-700 mb-2">Pilih Gejala</legend>
-                            <div className="border border-gray-200 rounded-lg">
-                                <div className="flex">
-                                    {Object.keys(symptomCategories).map(category => (
-                                        <button key={category} type="button" onClick={() => setActiveCategory(category)} className={`flex-1 p-2 text-sm font-medium border-b-2 ${activeCategory === category ? 'border-[--primary] text-[--primary]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-                                            {category}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="p-4 space-y-3 max-h-60 overflow-y-auto">
-                                    {symptomCategories[activeCategory]?.map(symptom => (
-                                        <div key={symptom.name}>
-                                            <div className="flex items-center">
-                                                <input id={`symptom-${symptom.name}`} type="checkbox" checked={selectedSymptoms.has(symptom.name)} onChange={(e) => handleCheckboxChange(symptom, e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-[--primary] focus:ring-[--primary]" />
-                                                <label htmlFor={`symptom-${symptom.name}`} className="ml-3 block text-sm font-medium text-gray-800">{symptom.label}</label>
-                                            </div>
-                                            {selectedSymptoms.has(symptom.name) && (
-                                                <div className="flex items-center space-x-3 mt-1 pl-7">
-                                                     <input type="range" min="1" max="100" value={symptoms.find(s => s.name === symptom.name)?.value || 50} onChange={(e) => handleSliderChange(symptom.name, parseInt(e.target.value))} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[--primary]" />
-                                                    <span className="text-sm text-gray-600 w-12 text-center font-mono">{symptoms.find(s => s.name === symptom.name)?.value || 0}%</span>
+                             <legend className="text-lg font-semibold">Gejala yang Dialami</legend>
+                            <Accordion type="single" collapsible className="w-full" defaultValue="item-0">
+                                {Object.entries(symptomCategories).map(([category, symptomsList], index) => (
+                                    <AccordionItem value={`item-${index}`} key={category}>
+                                        <AccordionTrigger className="text-base">{category}</AccordionTrigger>
+                                        <AccordionContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                            {symptomsList.map(symptom => (
+                                                <div key={symptom.name} className="space-y-2">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Checkbox id={symptom.name} checked={symptoms.some(s => s.name === symptom.name)} onCheckedChange={(checked) => handleSymptomCheckedChange(symptom, checked)} />
+                                                        <label htmlFor={symptom.name} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                            {symptom.label}
+                                                        </label>
+                                                    </div>
+                                                    {symptoms.some(s => s.name === symptom.name) && (
+                                                        <div className="flex items-center space-x-4 pl-6">
+                                                            <Slider
+                                                                value={[symptoms.find(s => s.name === symptom.name)?.value || 50]}
+                                                                onValueChange={(value) => handleSliderChange(symptom.name, value)}
+                                                                max={100}
+                                                                step={1}
+                                                                className="w-[calc(100%-4rem)]"
+                                                            />
+                                                             <span className="text-sm font-mono text-gray-600 w-12 text-right">{symptoms.find(s => s.name === symptom.name)?.value}%</span>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                                            ))}
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                ))}
+                            </Accordion>
                         </fieldset>
-
-                        <button type="submit" disabled={loading || symptoms.length === 0} className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[--primary] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--primary] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors">
-                            {loading ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Menganalisis...
-                                </>
-                            ) : 'Mulai Diagnosis'}
-                        </button>
+                        <Button type="submit" className="w-full" disabled={loading || symptoms.length === 0}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {loading ? 'Menganalisis...' : 'Mulai Diagnosis'}
+                        </Button>
                     </form>
-                </div>
 
-                {/* Right Column: Visualizer & Results */}
-                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col">
-                    <div className="flex-grow flex items-center justify-center relative">
-                        {results ? (
-                             <div className="w-full">
-                                <h2 className="text-xl font-bold text-center text-[--foreground] mb-4">Hasil Diagnosis</h2>
-                                {results.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {results.slice(0, 3).map((result, index) => (
-                                            <div key={index} className="bg-gray-50 rounded-lg p-4 border-l-4 border-[--accent]">
+                    {/* Results */}
+                    {results && (
+                        <div className="mt-8 pt-6 border-t">
+                            <h2 className="text-xl font-semibold text-center mb-4">Hasil Diagnosis Awal</h2>
+                            {results.length > 0 ? (
+                                <div className="space-y-4">
+                                    {results.slice(0, 3).map((result) => (
+                                        <Card key={result.disease} className={`${result.confidence > 70 ? 'border-primary' : ''}`}>
+                                            <CardHeader>
                                                 <div className="flex justify-between items-center">
-                                                    <h3 className="text-md font-semibold text-gray-800">{result.disease}</h3>
+                                                    <CardTitle>{result.disease}</CardTitle>
                                                     <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${ result.severity === 'berat' ? 'bg-red-100 text-red-800' : result.severity === 'sedang' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>{result.severity}</span>
                                                 </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2 my-2">
-                                                    <div className="bg-[--primary] h-2 rounded-full" style={{ width: `${result.confidence}%` }}></div>
+                                                <CardDescription>Tingkat Kepercayaan: {result.confidence.toFixed(1)}%</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${result.confidence}%` }}></div>
                                                 </div>
-                                                <p className="text-xs text-right text-gray-600">Tingkat Kepercayaan: {result.confidence.toFixed(1)}%</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-center text-gray-600">Tidak ada diagnosis yang cocok dengan gejala yang Anda pilih.</p>
-                                )}
-                                {recommendations.length > 0 && (
-                                    <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <h4 className="font-semibold text-blue-800 mb-2">Rekomendasi:</h4>
-                                        <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-center text-gray-600">Tidak ada diagnosis yang cocok dengan gejala yang Anda pilih.</p>
+                            )}
+
+                             {recommendations.length > 0 && (
+                                <Alert className="mt-6">
+                                    <AlertTitle className="font-semibold">Rekomendasi</AlertTitle>
+                                    <AlertDescription>
+                                        <ul className="list-disc list-inside space-y-1 mt-2">
                                             {recommendations.map((rec, index) => <li key={index}>{rec}</li>)}
                                         </ul>
-                                    </div>
-                                )}
-                             </div>
-                        ) : (
-                           <div className="w-2/3 h-full">
-                             <BodyMap highlightedParts={highlightedBodyParts} />
-                           </div>
-                        )}
-                    </div>
-                </div>
-            </main>
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }
