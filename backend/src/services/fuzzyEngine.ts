@@ -13,21 +13,25 @@ export interface Disease {
 
 export class FuzzyLogicEngine {
   private diseases: Disease[] = [
-    {
-      name: 'Demam',
-      symptoms: ['suhu_tinggi', 'lemas', 'sakit_kepala', 'menggigil'],
-      severity: 'sedang'
-    },
-    {
-      name: 'Flu',
-      symptoms: ['batuk', 'pilek', 'sakit_tenggorokan', 'lemas'],
-      severity: 'ringan'
-    },
-    {
-      name: 'Diare',
-      symptoms: ['mual', 'muntah', 'sakit_perut', 'buang_air_besar_cair'],
-      severity: 'sedang'
-    }
+    // Penyakit Saluran Pernapasan
+    { name: 'ISPA', symptoms: ['batuk', 'pilek', 'sakit_tenggorokan', 'sesak_napas', 'suhu_tinggi'], severity: 'sedang' },
+    { name: 'Faringitis', symptoms: ['sakit_tenggorokan', 'nyeri_menelan', 'suhu_tinggi', 'lemas'], severity: 'sedang' },
+    { name: 'Common Cold', symptoms: ['pilek', 'bersin', 'batuk', 'sakit_tenggorokan'], severity: 'ringan' },
+    { name: 'Parotitis (Gondongan)', symptoms: ['bengkak_pipi', 'nyeri_rahang', 'suhu_tinggi', 'sakit_kepala'], severity: 'sedang' },
+
+    // Penyakit Akibat Virus
+    { name: 'Herpes Simpleks', symptoms: ['luka_melepuh', 'gatal_di_kulit', 'nyeri_kulit', 'suhu_tinggi'], severity: 'sedang' },
+    { name: 'Konjungtivitis (Mata Merah)', symptoms: ['mata_merah', 'mata_berair', 'gatal_mata', 'kotoran_mata'], severity: 'ringan' },
+    { name: 'Influenza', symptoms: ['suhu_tinggi', 'lemas', 'sakit_kepala', 'menggigil', 'nyeri_otot', 'batuk'], severity: 'sedang' },
+    
+    // Penyakit Akibat Infeksi Kulit
+    { name: 'Dermatitis Kontak', symptoms: ['ruam_kulit', 'gatal_di_kulit', 'kulit_kering', 'bengkak_ringan'], severity: 'ringan' },
+    { name: 'Scabies (Kudis)', symptoms: ['gatal_malam_hari', 'ruam_kulit', 'bintik_merah', 'luka_garukan'], severity: 'sedang' },
+    { name: 'Stomatitis (Sariawan)', symptoms: ['luka_mulut', 'nyeri_mulut', 'sulit_makan', 'gusi_bengkak'], severity: 'ringan' },
+
+    // Penyakit Umum Lainnya
+    { name: 'Demam', symptoms: ['suhu_tinggi', 'lemas', 'sakit_kepala', 'menggigil'], severity: 'sedang' },
+    { name: 'Diare', symptoms: ['mual', 'muntah', 'sakit_perut', 'buang_air_besar_cair'], severity: 'sedang' }
   ];
 
   // Fungsi membership untuk gejala

@@ -34,21 +34,26 @@ export class DiagnosisController {
     }
   }
 
-  private generateRecommendations(results: any[]): string[] {
+private generateRecommendations(results: any[]): string[] {
     const recommendations: string[] = [];
     
     if (results.length > 0) {
       const topResult = results[0];
       
-      if (topResult.confidence > 70) {
-        recommendations.push(`Segera konsultasi dengan petugas kesehatan pesantren`);
-        recommendations.push(`Istirahat yang cukup dan minum air putih`);
+      if (topResult.severity === 'berat' && topResult.confidence > 50) {
+        recommendations.push(`Gejala mengindikasikan kondisi serius. Segera hubungi petugas kesehatan pesantren secepatnya!`);
+        recommendations.push(`Hindari kontak dengan santri lain untuk mencegah penularan.`);
+      } else if (topResult.confidence > 70) {
+        recommendations.push(`Segera konsultasi dengan petugas kesehatan pesantren untuk pemeriksaan lebih lanjut.`);
+        recommendations.push(`Perbanyak istirahat dan minum air putih yang cukup.`);
       } else if (topResult.confidence > 40) {
-        recommendations.push(`Pantau perkembangan gejala`);
-        recommendations.push(`Jaga kebersihan dan pola makan`);
+        recommendations.push(`Pantau terus perkembangan gejala Anda.`);
+        recommendations.push(`Jaga kebersihan diri dan lingkungan, serta pastikan asupan makanan bergizi.`);
       } else {
-        recommendations.push(`Gejala masih ringan, tetap jaga kesehatan`);
+        recommendations.push(`Gejala yang Anda rasakan masih tergolong ringan. Tetap jaga kesehatan dan pola hidup sehat.`);
       }
+    } else {
+      recommendations.push(`Tidak ada diagnosis yang cocok dengan gejala Anda. Tetap pantau kesehatan.`);
     }
 
     return recommendations;
