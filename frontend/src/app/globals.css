@@ -1,8 +1,13 @@
+ /* frontend/src/app/globals.css */
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f0f7f4; /* Light Greenish Blue */
+  --foreground: #0d4740; /* Dark Teal */
+  --primary: #2ca58d;    /* Teal */
+  --primary-foreground: #ffffff;
+  --secondary: #a0d2eb;  /* Light Blue */
+  --accent: #f5c518;     /* Gold/Yellow */
 }
 
 @theme inline {
@@ -10,13 +15,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
