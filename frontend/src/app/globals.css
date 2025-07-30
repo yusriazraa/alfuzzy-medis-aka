@@ -1,13 +1,12 @@
- /* frontend/src/app/globals.css */
 @import "tailwindcss";
 
 :root {
-  --background: #f0f7f4; /* Light Greenish Blue */
-  --foreground: #0d4740; /* Dark Teal */
-  --primary: #2ca58d;    /* Teal */
+  --background: #f0f9ff; /* Light Sky Blue */
+  --foreground: #0c4a6e; /* Dark Blue */
+  --primary: #0ea5e9;    /* Sky Blue */
   --primary-foreground: #ffffff;
-  --secondary: #a0d2eb;  /* Light Blue */
-  --accent: #f5c518;     /* Gold/Yellow */
+  --secondary: #e0f2fe;  /* Lighter Blue */
+  --accent: #f59e0b;     /* Amber/Gold */
 }
 
 @theme inline {
