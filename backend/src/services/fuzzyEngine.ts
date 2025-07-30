@@ -1,38 +1,23 @@
 // backend/src/services/fuzzyEngine.ts
+import { db, DiseaseRule } from '../database';
+
 export interface Symptom {
   name: string;
   value: number; // 0-100
   weight: number; // bobot kepentingan
 }
 
-export interface Disease {
-  name: string;
-  symptoms: string[];
-  severity: 'ringan' | 'sedang' | 'berat';
-}
-
 export class FuzzyLogicEngine {
-  private diseases: Disease[] = [
-    // Penyakit Saluran Pernapasan
-    { name: 'ISPA', symptoms: ['batuk', 'pilek', 'sakit_tenggorokan', 'sesak_napas', 'suhu_tinggi'], severity: 'sedang' },
-    { name: 'Faringitis', symptoms: ['sakit_tenggorokan', 'nyeri_menelan', 'suhu_tinggi', 'lemas'], severity: 'sedang' },
-    { name: 'Common Cold', symptoms: ['pilek', 'bersin', 'batuk', 'sakit_tenggorokan'], severity: 'ringan' },
-    { name: 'Parotitis (Gondongan)', symptoms: ['bengkak_pipi', 'nyeri_rahang', 'suhu_tinggi', 'sakit_kepala'], severity: 'sedang' },
+  private diseases: DiseaseRule[] = [];
 
-    // Penyakit Akibat Virus
-    { name: 'Herpes Simpleks', symptoms: ['luka_melepuh', 'gatal_di_kulit', 'nyeri_kulit', 'suhu_tinggi'], severity: 'sedang' },
-    { name: 'Konjungtivitis (Mata Merah)', symptoms: ['mata_merah', 'mata_berair', 'gatal_mata', 'kotoran_mata'], severity: 'ringan' },
-    { name: 'Influenza', symptoms: ['suhu_tinggi', 'lemas', 'sakit_kepala', 'menggigil', 'nyeri_otot', 'batuk'], severity: 'sedang' },
-    
-    // Penyakit Akibat Infeksi Kulit
-    { name: 'Dermatitis Kontak', symptoms: ['ruam_kulit', 'gatal_di_kulit', 'kulit_kering', 'bengkak_ringan'], severity: 'ringan' },
-    { name: 'Scabies (Kudis)', symptoms: ['gatal_malam_hari', 'ruam_kulit', 'bintik_merah', 'luka_garukan'], severity: 'sedang' },
-    { name: 'Stomatitis (Sariawan)', symptoms: ['luka_mulut', 'nyeri_mulut', 'sulit_makan', 'gusi_bengkak'], severity: 'ringan' },
+  constructor() {
+    this.loadRules();
+  }
 
-    // Penyakit Umum Lainnya
-    { name: 'Demam', symptoms: ['suhu_tinggi', 'lemas', 'sakit_kepala', 'menggigil'], severity: 'sedang' },
-    { name: 'Diare', symptoms: ['mual', 'muntah', 'sakit_perut', 'buang_air_besar_cair'], severity: 'sedang' }
-  ];
+  public loadRules(): void {
+    console.log("Memuat ulang aturan fuzzy dari database...");
+    this.diseases = [...db.diseaseRules];
+  }
 
   // Fungsi membership untuk gejala
   private membershipFunction(value: number, type: 'low' | 'medium' | 'high'): number {
@@ -44,9 +29,9 @@ export class FuzzyLogicEngine {
                value <= 70 ? 1 : value <= 90 ? (90 - value) / 20 : 0;
       case 'high':
         return value <= 70 ? 0 : value <= 90 ? (value - 70) / 20 : 1;
-      default:
-        return 0;
     }
+    // FIX: Tambahkan return default untuk memastikan fungsi selalu mengembalikan nilai.
+    return 0;
   }
 
   // Hitung tingkat kemungkinan penyakit
@@ -59,7 +44,7 @@ export class FuzzyLogicEngine {
 
       disease.symptoms.forEach(diseaseSymptom => {
         const userSymptom = symptoms.find(s => s.name === diseaseSymptom);
-        if (userSymptom) {
+        if (userSymptom && userSymptom.weight) { // Pastikan weight ada
           // Hitung fuzzy membership
           const lowMembership = this.membershipFunction(userSymptom.value, 'low');
           const mediumMembership = this.membershipFunction(userSymptom.value, 'medium');

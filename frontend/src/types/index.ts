@@ -28,3 +28,11 @@ export interface ApiResponse {
     recommendations: string[];
   };
 }
+
+// FIX: Menambahkan tipe DiseaseRule di frontend
+export interface DiseaseRule {
+    id: number;
+    name: string;
+    symptoms: string[];
+    severity: 'ringan' | 'sedang' | 'berat';
+}
